@@ -1,0 +1,24 @@
+syntax="proto3";
+
+package phase_proto;
+
+option go_package = "./phase_proto";
+
+service PhaseEqualibrium {
+    rpc Divide(DivideRequest) returns (Response);
+    rpc Multiply(MultiplyRequest) returns (Response);
+}
+
+message DivideRequest{
+    double Num1 = 1;
+    double Num2 = 2;
+}
+
+message MultiplyRequest{
+    double Num1 = 1;
+    double Num2 = 2;
+}
+
+message Response{
+    double Response = 1;
+}
