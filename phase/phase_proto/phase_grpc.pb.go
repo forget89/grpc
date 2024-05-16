@@ -4,7 +4,7 @@
 // - protoc             v5.27.0--rc2
 // source: phase.proto
 
-package phase_proto
+package phase
 
 import (
 	context "context"

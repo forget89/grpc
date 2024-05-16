@@ -2,7 +2,7 @@ syntax="proto3";
 
 package phase_proto;
 
-option go_package = "./phase_proto";
+option go_package = "/phase";
 
 service PhaseEqualibrium {
     rpc Divide(DivideRequest) returns (Response);

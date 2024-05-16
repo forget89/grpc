@@ -7,7 +7,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "github.com/forget89/grpc/phase"
+	pb "github.com/forget89/grpc/phase/phase_proto"
 )
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 
 	defer conn.Close()
 
-	client := pb.NewCalculatorServer(conn)
+	client := pb.NewPhaseEqualibriumServer(conn)
 
 	divideResult, err := client.Divide(context.Background(), &pb.DivideRequest{Num1: 20.4, Num2: 2.4})
 	if err != nil {
