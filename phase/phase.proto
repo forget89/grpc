@@ -7,6 +7,7 @@ option go_package = "/phase";
 service PhaseEqualibrium {
     rpc Divide(DivideRequest) returns (Response);
     rpc Multiply(MultiplyRequest) returns (Response);
+    rpc Array(ArrayRequest) returns (Response);
 }
 
 message DivideRequest{
@@ -17,6 +18,10 @@ message DivideRequest{
 message MultiplyRequest{
     double Num1 = 1;
     double Num2 = 2;
+}
+
+message ArrayRequest{
+    repeated double Nums = 1;
 }
 
 message Response{

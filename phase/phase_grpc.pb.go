@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	PhaseEqualibrium_Divide_FullMethodName   = "/phase_proto.PhaseEqualibrium/Divide"
 	PhaseEqualibrium_Multiply_FullMethodName = "/phase_proto.PhaseEqualibrium/Multiply"
+	PhaseEqualibrium_Array_FullMethodName    = "/phase_proto.PhaseEqualibrium/Array"
 )
 
 // PhaseEqualibriumClient is the client API for PhaseEqualibrium service.
@@ -29,6 +30,7 @@ const (
 type PhaseEqualibriumClient interface {
 	Divide(ctx context.Context, in *DivideRequest, opts ...grpc.CallOption) (*Response, error)
 	Multiply(ctx context.Context, in *MultiplyRequest, opts ...grpc.CallOption) (*Response, error)
+	Array(ctx context.Context, in *ArrayRequest, opts ...grpc.CallOption) (*Response, error)
 }
 
 type phaseEqualibriumClient struct {
@@ -57,12 +59,22 @@ func (c *phaseEqualibriumClient) Multiply(ctx context.Context, in *MultiplyReque
 	return out, nil
 }
 
+func (c *phaseEqualibriumClient) Array(ctx context.Context, in *ArrayRequest, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := c.cc.Invoke(ctx, PhaseEqualibrium_Array_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PhaseEqualibriumServer is the server API for PhaseEqualibrium service.
 // All implementations must embed UnimplementedPhaseEqualibriumServer
 // for forward compatibility
 type PhaseEqualibriumServer interface {
 	Divide(context.Context, *DivideRequest) (*Response, error)
 	Multiply(context.Context, *MultiplyRequest) (*Response, error)
+	Array(context.Context, *ArrayRequest) (*Response, error)
 	mustEmbedUnimplementedPhaseEqualibriumServer()
 }
 
@@ -75,6 +87,9 @@ func (UnimplementedPhaseEqualibriumServer) Divide(context.Context, *DivideReques
 }
 func (UnimplementedPhaseEqualibriumServer) Multiply(context.Context, *MultiplyRequest) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Multiply not implemented")
+}
+func (UnimplementedPhaseEqualibriumServer) Array(context.Context, *ArrayRequest) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Array not implemented")
 }
 func (UnimplementedPhaseEqualibriumServer) mustEmbedUnimplementedPhaseEqualibriumServer() {}
 
@@ -125,6 +140,24 @@ func _PhaseEqualibrium_Multiply_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PhaseEqualibrium_Array_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ArrayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PhaseEqualibriumServer).Array(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PhaseEqualibrium_Array_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PhaseEqualibriumServer).Array(ctx, req.(*ArrayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PhaseEqualibrium_ServiceDesc is the grpc.ServiceDesc for PhaseEqualibrium service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -139,6 +172,10 @@ var PhaseEqualibrium_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Multiply",
 			Handler:    _PhaseEqualibrium_Multiply_Handler,
+		},
+		{
+			MethodName: "Array",
+			Handler:    _PhaseEqualibrium_Array_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

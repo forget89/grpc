@@ -7,7 +7,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "/phase/phase_proto"
+	pb "phase"
 )
 
 type PhaseEqualibriumServer struct {
@@ -21,6 +21,11 @@ func (s *PhaseEqualibriumServer) Divide(ctx context.Context, req *pb.DivideReque
 
 func (s *PhaseEqualibriumServer) Multiply(ctx context.Context, req *pb.MultiplyRequest) (*pb.Response, error) {
 	result := req.Num1 * req.Num2
+	return &pb.Response{Response: result}, nil
+}
+
+func (s *PhaseEqualibriumServer) Array(ctx context.Context, req *pb.ArrayRequest) (*pb.Response, error) {
+	result := req.Nums
 	return &pb.Response{Response: result}, nil
 }
 

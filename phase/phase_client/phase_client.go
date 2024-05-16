@@ -7,7 +7,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "github.com/forget89/grpc/phase/phase_proto"
+	pb "phase"
 )
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 
 	defer conn.Close()
 
-	client := pb.NewPhaseEqualibriumServer(conn)
+	client := pb.NewPhaseEqualibriumClient(conn)
 
 	divideResult, err := client.Divide(context.Background(), &pb.DivideRequest{Num1: 20.4, Num2: 2.4})
 	if err != nil {
@@ -28,9 +28,15 @@ func main() {
 	}
 	fmt.Printf("Divide Result: %.2f\n", divideResult.Response)
 
-	multiplyResult, err := client.Divide(context.Background(), &pb.MultiplyRequest{Num1: 5.4, Num2: 2.4})
+	multiplyResult, err := client.Multiply(context.Background(), &pb.MultiplyRequest{Num1: 5.4, Num2: 2.4})
 	if err != nil {
 		log.Fatalf("Multiply RPC failed: %v", err)
 	}
 	fmt.Printf("Multiply Result: %.2f\n", multiplyResult.Response)
+
+	arrayResult, err := client.Array(context.Background(), &pb.ArrayRequest{Nums: []double{1.6, 2.6, 3.5}})
+	if err != nil {
+		log.Fatalf("Array RPC failed: %v", err)
+	}
+	fmt.Printf("Array Result: %.2f\n", arrayResult.Response)
 }
