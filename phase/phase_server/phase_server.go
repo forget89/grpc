@@ -24,9 +24,17 @@ func (s *PhaseEqualibriumServer) Multiply(ctx context.Context, req *pb.MultiplyR
 	return &pb.Response{Response: result}, nil
 }
 
-func (s *PhaseEqualibriumServer) Array(ctx context.Context, req *pb.ArrayRequest) (*pb.Response, error) {
-	result := req.Nums
-	return &pb.Response{Response: result}, nil
+func (s *PhaseEqualibriumServer) Array(ctx context.Context, req *pb.ArrayRequest) (*pb.ArrayResponse, error) {
+	return &pb.ArrayResponse{Array: req.Nums}, nil
+}
+
+func (s *PhaseEqualibriumServer) ArrayDivide(ctx context.Context, req *pb.ArrayDivideRequest) (*pb.ArrayDivideResponse, error) {
+	result := make([]float64, len(req.Nums))
+	for i, num := range req.Nums {
+		result[i] = num / 100
+	}
+	log.Printf("ArrayDivide: %.4f\n", result)
+	return &pb.ArrayDivideResponse{Array: result}, nil
 }
 
 func main() {
