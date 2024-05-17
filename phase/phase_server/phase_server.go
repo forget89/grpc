@@ -37,6 +37,10 @@ func (s *PhaseEqualibriumServer) ArrayDivide(ctx context.Context, req *pb.ArrayD
 	return &pb.ArrayDivideResponse{Array: result}, nil
 }
 
+func (s *PhaseEqualibriumServer) Fluid(ctx context.Context, req *pb.InitMessageRequest) (*pb.InitMessageResponse, error) {
+	return &pb.InitMessageResponse{Fluid: req.fluids}, nil
+}
+
 func main() {
 	listen, err := net.Listen("tcp", ":50051")
 	if err != nil {

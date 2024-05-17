@@ -8,9 +8,9 @@ service PhaseEqualibrium {
     rpc Divide(DivideRequest) returns (Response);
     rpc Multiply(MultiplyRequest) returns (Response);
     rpc Array(ArrayRequest) returns (ArrayResponse);
-    // rpc ArrayDivide(ArrayDivideRequest) returns (ArrayDivideResponse);
-    // rpc init(initMessageRequest) returns (initMessageResponse);
-    // rpc vle(vleMessageRequest) returns (vleMessageResponse);
+    rpc ArrayDivide(ArrayDivideRequest) returns (ArrayDivideResponse);
+    rpc init(initMessageRequest) returns (initMessageResponse);
+    rpc vle(vleMessageRequest) returns (vleMessageResponse);
 }
 
 message DivideRequest{
@@ -43,51 +43,51 @@ message ArrayDivideResponse{
     repeated double array = 1;
 }
 
-// message initMessageRequest{
-//     message fluid{
-//         string name = 1;
-//         double molDolya = 2; 
-//         double molecMass = 3;
-//         double criticalPres = 4;
-//         double criticalTemp = 5;
-//         double volume = 6; // критический объем не используем
-//         double aFactor = 7;
-//         double shift = 8; // cpen в основном коде
-//     }
-//     message bip{
-//         double bip = 1; // bip двумерный массив  {ci, cj} {0, 0}
-//     }
-//     repeated fluid fluids = 1; // массив флюидов 22 штук
-//     repeated fluid bips = 2;
-// }
+message initMessageRequest{
+    message fluid{
+        string name = 1;
+        double molDolya = 2; 
+        double molecMass = 3;
+        double criticalPres = 4;
+        double criticalTemp = 5;
+        double volume = 6; // критический объем не используем
+        double aFactor = 7;
+        double shift = 8; // cpen в основном коде
+    }
+    message bip{
+        double bip = 1; // bip двумерный массив  {ci, cj} {0, 0}
+    }
+    repeated fluid fluids = 1; // массив флюидов 22 штук
+    repeated bip bips = 2;
+}
 
-// message initMessageResponse{
-//     message fluid{
-//         string name = 1;
-//         double molDolya = 2; 
-//         double molecMass = 3;
-//         double criticalPres = 4;
-//         double criticalTemp = 5;
-//         double volume = 6; // критический объем не используем
-//         double aFactor = 7;
-//         double shift = 8; // cpen в основном коде
-//     }
-//     message bip{
-//         double bip = 1; // bip двумерный массив  {ci, cj} {0, 0}
-//     }
-//     repeated fluid fluids = 1; // массив флюидов 22 штук
-//     repeated fluid bips = 2;
-// }
+message initMessageResponse{
+    message fluid{
+        string name = 1;
+        double molDolya = 2; 
+        double molecMass = 3;
+        double criticalPres = 4;
+        double criticalTemp = 5;
+        double volume = 6; // критический объем не используем
+        double aFactor = 7;
+        double shift = 8; // cpen в основном коде
+    }
+    message bip{
+        double bip = 1; // bip двумерный массив  {ci, cj} {0, 0}
+    }
+    repeated fluid fluids = 1; // массив флюидов 22 штук
+    repeated bip bips = 2;
+}
 
-// message vleMessageRequest {
-//     double temp = 1; // расчитывается 1 температура
-//     double pres = 5; // расчитывается 1 давление
-// }
+message vleMessageRequest {
+    double temp = 1; // расчитывается 1 температура
+    double pres = 5; // расчитывается 1 давление
+}
 
-// message vleMessageResponse {
-//     double dolyaLiquid = 1; // 1-W = L
-//     double coefLiquid = 2; // Zl
-//     double coefGas = 3; // Zv
-//     repeated double dolyaCompLiquid = 4; // x_i
-//     repeated double dolyaCompGas = 5; // y_i
-// }
+message vleMessageResponse {
+    double dolyaLiquid = 1; // 1-W = L
+    double coefLiquid = 2; // Zl
+    double coefGas = 3; // Zv
+    repeated double dolyaCompLiquid = 4; // x_i
+    repeated double dolyaCompGas = 5; // y_i
+}

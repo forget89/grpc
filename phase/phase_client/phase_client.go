@@ -45,4 +45,10 @@ func main() {
 		log.Fatalf("ArrayDivide RPC failed: %v", err)
 	}
 	fmt.Printf("ArrayDivide Result: %.4f\n", arrayDivideResult.Array)
+
+	fluidResult, err := client.Fluid(context.Background(), &pb.InitMessageRequest{fluids: []interface{}{1.2, 241.24, 432, 3432, 32, 34, 224, 342, 242}})
+	if err != nil {
+		log.Fatalf("Init RPC failed: %v", err)
+	}
+	fmt.Printf("Init Result: %.2f\n", fluidResult.fluids)
 }
