@@ -21,11 +21,6 @@ func main() { // основная функция main, где написан о�
 
 	z = normalizeZ(z) // переводим с процентов на число, путем деления всех чисел массива на 100
 
-	if !checkSum(z) { // проверяем сумму не равноц нулю, строки 643-654
-		fmt.Println("Sum of z is not equal to 1.0")
-		os.Exit(1)
-	}
-
 	N := len(z) // количество компонентов. len -длина массива
 
 	// Наши данные по ТЗ у составов
@@ -76,14 +71,6 @@ func main() { // основная функция main, где написан о�
 
 	R := 0.00831675 // константа
 
-	fid2, err := os.Create("W(P).txt") // создание текстового файла W(P) ???
-
-	if err != nil { // проверка на ошибку, если ошибка то ее вывод
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	defer fid2.Close()
-
 	fid5, err := os.Create("Mesh.txt") // создание текстового файла Mesh с нашими результатами T P Z_v Z_l W
 	if err != nil {
 		fmt.Println(err)
@@ -126,50 +113,51 @@ func main() { // основная функция main, где написан о�
 			}
 
 			for i := 0; i < N; i++ {
-				K_i[i] = math.Pow(math.Exp(5.373*(1+w[i])*(1-Tkr[i]/T))*Pkr[i]/P, 1.0) // **посмотреть калиновского
+				K_i[i] = math.Pow(math.Exp(5.373*(1+w[i])*(1-Tkr[i]/T))*Pkr[i]/P, 1.0) // начальные значенения коэффициентов распределения
 			}
 
 			aw := 0.0 // начальное значение для работы цикла
 			bw := 0.0
 			for i := 0; i < N; i++ {
 				for j := 0; j < N; j++ {
-					aw += z[i] * z[j] * (1 - c[i][j]) * math.Sqrt(a_i[i]*a_i[j]) // коэффициент **посмотреть калиновского
+					aw += z[i] * z[j] * (1 - c[i][j]) * math.Sqrt(a_i[i]*a_i[j]) // коэффициент для уравнения Aw
 				}
 			}
 			for i := 0; i < N; i++ {
-				bw += z[i] * b_i[i] // коэффициент **посмотреть калиновского
+				bw += z[i] * b_i[i] // коэффициент для уравнения Bw
 			}
-			Aw := aw * P / (math.Pow(R, 2) * math.Pow(T, 2)) // коэффициент **посмотреть калиновского
-			Bw := bw * P / (R * T)                           // коэффициент **посмотреть калиновского
-			cw := 0.0                                        // коэффициент **посмотреть калиновского
+			Aw := aw * P / (math.Pow(R, 2) * math.Pow(T, 2)) // коэффициент для кубического уравнения состояния
+			Bw := bw * P / (R * T)                           // коэффициент для кубического уравнения состояния
+			cw := 0.0
 			for i := 0; i < N; i++ {
-				cw += c_i[i] * z[i] // коэффициент **посмотреть калиновского
+				cw += c_i[i] * z[i] // коэффициент для уравнения Cw
 			}
-			Cw := cw * P / (R * T) // коэффициент **посмотреть калиновского
+			Cw := cw * P / (R * T) // коэффициент для кубического уравнения состояния
 
 			for i := 0; i < N; i++ {
-				Biw[i] = b_i[i] * P / (R * T) // коэффициент **посмотреть калиновского
-				Ciw[i] = c_i[i] * P / (R * T) // коэффициент **посмотреть калиновского
+				Biw[i] = b_i[i] * P / (R * T) // коэффициент для уравнения летучести компонентов
+				Ciw[i] = c_i[i] * P / (R * T) // коэффициент для уравнения летучести компонентов
 			}
 
 			coefficients := []float64{1, 3*Cw - 1, 3*math.Pow(Cw, 2) - math.Pow(Bw, 2) - 2*Cw - Bw + Aw, math.Pow(Cw, 3) - math.Pow(Bw, 2)*Cw - math.Pow(Cw, 2) - Bw*Cw + Aw*Cw - Aw*Bw} // расчет кубического уравнения состояния
-			var cubroot = cubicEquationSolver(coefficients[0], coefficients[1], coefficients[2], coefficients[3])                                                                        //  в конце кода расписана сама функция
+			var cubroot = cubicEquationSolver(coefficients[0], coefficients[1], coefficients[2], coefficients[3])                                                                        // в конце кода расписана сама функция
 			Z_v = findMax(cubroot)                                                                                                                                                       // максимальное значение по куб. ур. для пара
 
 			for i := 0; i < N; i++ {
 				avv := 0.0
 				for j := 0; j < N; j++ {
-					avv += z[j] * (1 - c[i][j]) * math.Sqrt(a_i[i]*a_i[j]) // коэффициент **посмотреть калиновского
+					avv += z[j] * (1 - c[i][j]) * math.Sqrt(a_i[i]*a_i[j]) // кусок уравнения из уравнения летучести компонентов, для удобного и правильного расчета
 				}
-				avvv[i] = avv // коэффициент **посмотреть калиновского
+				avvv[i] = avv
 			}
 
 			fz_i := make([]float64, N)
 			for i := 0; i < N; i++ {
-				fz_i[i] = math.Exp(math.Log(z[i]*P) - math.Log(Z_v+Cw-Bw) + (Biw[i]-Ciw[i])/(Z_v+Cw-Bw) - (Aw/Bw)*((2*avvv[i]/aw)-(b_i[i]/bw))*math.Log((Z_v+Bw+Cw)/(Z_v+Cw)) - (Aw/Bw)*(Biw[i]+Ciw[i])/(Z_v+Bw+Cw) + (Aw/Bw)*Ciw[i]/(Z_v+Cw)) // коэффициент **посмотреть калиновского
+				fz_i[i] = math.Exp(math.Log(z[i]*P) - math.Log(Z_v+Cw-Bw) + (Biw[i]-Ciw[i])/(Z_v+Cw-Bw) - (Aw/Bw)*((2*avvv[i]/aw)-(b_i[i]/bw))*math.Log((Z_v+Bw+Cw)/(Z_v+Cw)) - (Aw/Bw)*(Biw[i]+Ciw[i])/(Z_v+Bw+Cw) + (Aw/Bw)*Ciw[i]/(Z_v+Cw)) // уравнение летучести компонентов в паровой фазе
 			}
 
 			// задаем для проверки и расчета стабильности
+
 			m := 0
 
 			Ri_v := 1.0
@@ -179,9 +167,9 @@ func main() { // основная функция main, где написан о�
 
 			// Часть 1 Проверка газовой фазы
 
-			for m < 30 { // цикл **
+			for m < 30 { // 30 итераций
 
-				Yi_v := make([]float64, N) // **
+				Yi_v := make([]float64, N) // компонент
 				Sv1 := 0.0
 				for i := 0; i < N; i++ {
 					Yi_v[i] = z[i] * K_i[i]
@@ -194,7 +182,7 @@ func main() { // основная функция main, где написан о�
 					y_i[i] = Yi_v[i] / Sv
 				}
 
-				aw = 0.0 // **
+				aw = 0.0 // аналогичный расчет
 				bw = 0.0
 				for i := 0; i < N; i++ {
 					for j := 0; j < N; j++ {
@@ -203,27 +191,28 @@ func main() { // основная функция main, где написан о�
 				}
 
 				for i := 0; i < N; i++ {
-					bw += y_i[i] * b_i[i] // **
+					bw += y_i[i] * b_i[i]
 				}
 
-				Aw = aw * P / (math.Pow(R, 2) * math.Pow(T, 2)) // **
+				Aw = aw * P / (math.Pow(R, 2) * math.Pow(T, 2))
 				Bw = bw * P / (R * T)
 				cw = 0.0
 				for i := 0; i < N; i++ {
 					cw += c_i[i] * y_i[i]
 				}
-				Cw = cw * P / (R * T) // **
+				Cw = cw * P / (R * T)
 
 				for i := 0; i < N; i++ {
-					Biw[i] = b_i[i] * P / (R * T) // **
-					Ciw[i] = c_i[i] * P / (R * T) // **
+					Biw[i] = b_i[i] * P / (R * T)
+					Ciw[i] = c_i[i] * P / (R * T)
 				}
 
+				// кубическое уравнение состояние, путем нахождения 3 корней
 				coefficients := []float64{1, 3*Cw - 1, 3*math.Pow(Cw, 2) - math.Pow(Bw, 2) - 2*Cw - Bw + Aw, math.Pow(Cw, 3) - math.Pow(Bw, 2)*Cw - math.Pow(Cw, 2) - Bw*Cw + Aw*Cw - Aw*Bw}
 				var cubroot = cubicEquationSolver(coefficients[0], coefficients[1], coefficients[2], coefficients[3])
 				Z_v = findMax(cubroot) // максимальное значение по куб. ур. для пара
 
-				avvv = make([]float64, N) // **
+				avvv = make([]float64, N)
 				for i := 0; i < N; i++ {
 					avv := 0.0
 					for j := 0; j < N; j++ {
@@ -244,7 +233,7 @@ func main() { // основная функция main, где написан о�
 
 				Ri_v = 0.0
 				for i := 0; i < N; i++ {
-					Ri_v += math.Pow((Ri[i] - 1), 2) // **
+					Ri_v += math.Pow((Ri[i] - 1), 2)
 				}
 
 				if Ri_v < math.Pow(10, -12) {
@@ -252,14 +241,14 @@ func main() { // основная функция main, где написан о�
 				}
 
 				K_i = multiply(K_i, Ri)
-				TS_v := 0.0
+				TS_v := 0.0 // trivial solution
 
 				for _, k := range K_i {
 					TS_v += math.Pow(math.Log(k), 2)
 				}
 
 				if TS_v < math.Pow(10, -4) {
-					TS_v_flag = 1 // **
+					TS_v_flag = 1
 					m = 30
 				}
 
@@ -273,7 +262,6 @@ func main() { // основная функция main, где написан о�
 				K_i[i] = math.Pow(math.Exp(5.373*(1+w[i])*(1-Tkr[i]/T))*Pkr[i]/P, 1.0) // **
 			}
 
-			//вставленный отрезок
 			aw = 0.0
 			bw = 0.0
 			for i := 0; i < N; i++ {
@@ -319,14 +307,12 @@ func main() { // основная функция main, где написан о�
 				fz_i[i] = math.Exp(math.Log(z[i]*P) - math.Log(Z_v+Cw-Bw) + (Biw[i]-Ciw[i])/(Z_v+Cw-Bw) - (Aw/Bw)*((2*avvv[i]/aw)-(b_i[i]/bw))*math.Log((Z_v+Bw+Cw)/(Z_v+Cw)) - (Aw/Bw)*(Biw[i]+Ciw[i])/(Z_v+Bw+Cw) + (Aw/Bw)*Ciw[i]/(Z_v+Cw))
 			}
 
-			//КОНЕЦ ВСТАВЛЕННОГО ОТРЕЗКА
-
 			// Часть 2 Проверка жидкой фазы
-			// для жидкости
+
 			ml := 0
 			Ri_l := 1.0
 
-			for ml < 30 { // **
+			for ml < 30 {
 				Sl1 := 0.0
 				for i := 0; i < N; i++ {
 					Yi_l[i] = z[i] / K_i[i]
@@ -376,7 +362,7 @@ func main() { // основная функция main, где написан о�
 				}
 
 				for i := 0; i < N; i++ {
-					fl_i[i] = math.Exp(math.Log(x_i[i]*P) - math.Log(Z_l+Cl-Bl) + (Bil[i]-Cil[i])/(Z_l+Cl-Bl) - (Al/Bl)*((2*alll[i]/al)-(b_i[i]/bl))*math.Log((Z_l+Bl+Cl)/(Z_l+Cl)) - (Al/Bl)*(Bil[i]+Cil[i])/(Z_l+Bl+Cl) + (Al/Bl)*Cil[i]/(Z_l+Cl))
+					fl_i[i] = math.Exp(math.Log(x_i[i]*P) - math.Log(Z_l+Cl-Bl) + (Bil[i]-Cil[i])/(Z_l+Cl-Bl) - (Al/Bl)*((2*alll[i]/al)-(b_i[i]/bl))*math.Log((Z_l+Bl+Cl)/(Z_l+Cl)) - (Al/Bl)*(Bil[i]+Cil[i])/(Z_l+Bl+Cl) + (Al/Bl)*Cil[i]/(Z_l+Cl)) // уравнение летучести компонентов в жидкой фазе
 				}
 
 				for i := 0; i < N; i++ {
@@ -391,15 +377,15 @@ func main() { // основная функция main, где написан о�
 					m = 30
 				}
 
-				K_i = multiply(K_i, Ri) // **
+				K_i = multiply(K_i, Ri)
 				TS := 0.0
 
 				for i := range K_i {
-					TS += math.Pow(math.Log(K_i[i]), 2) // **
+					TS += math.Pow(math.Log(K_i[i]), 2)
 				}
 
 				if TS < math.Pow(10, -4) {
-					TS_l_flag = 1 // **
+					TS_l_flag = 1
 					m = 30
 				}
 				ml++
@@ -418,7 +404,7 @@ func main() { // основная функция main, где написан о�
 
 			// если не стабильна
 			if Stable == 0 {
-				// **
+
 				for i := 0; i < N; i++ {
 					ac_i[i] = 0.42747 * math.Pow(R, 2) * math.Pow(Tkr[i], 2) / Pkr[i]
 					psi_i[i] = 0.48 + 1.574*w[i] - 0.176*math.Pow(w[i], 2)
@@ -440,20 +426,20 @@ func main() { // основная функция main, где написан о�
 				m := 0
 				eps_f := 1.0 // **
 
-				for eps_f > 0.000001 && m < 50 { // **
+				for eps_f > 0.000001 && m < 50 { // условие
 
 					// Шаг 1 Нахождение общей доли пара
 
-					W = findRoot(z, K_i) // **
+					W = findRoot(z, K_i) // уравнение Ричарда-Райса
 
 					// Шаг 2 Нахождение мольных долей xi, yi
 
 					for i := 0; i < N; i++ {
-						x_i[i] = z[i] / (1 + W*(K_i[i]-1)) // **
+						x_i[i] = z[i] / (1 + W*(K_i[i]-1))
 					}
 
 					for i := 0; i < N; i++ {
-						y_i[i] = K_i[i] * x_i[i] // **
+						y_i[i] = K_i[i] * x_i[i]
 					}
 
 					// Шаг 3 Нахождение z-фактора
@@ -470,29 +456,23 @@ func main() { // основная функция main, где написан о�
 						bw += y_i[i] * b_i[i]
 					}
 
-					Aw = aw * P / (math.Pow(R, 2) * math.Pow(T, 2)) // **
-					Bw = bw * P / (R * T)                           // **
+					Aw = aw * P / (math.Pow(R, 2) * math.Pow(T, 2))
+					Bw = bw * P / (R * T)
 					cw = 0.0
 					for i := 0; i < N; i++ {
 						cw += c_i[i] * y_i[i]
 					}
 					Cw = cw * P / (R * T)
 
-					//Biw = make([]float64, N)
-					//Ciw = make([]float64, N)
 					for i := 0; i < N; i++ {
-						Biw[i] = b_i[i] * P / (R * T) // **
-						Ciw[i] = c_i[i] * P / (R * T) // **
+						Biw[i] = b_i[i] * P / (R * T)
+						Ciw[i] = c_i[i] * P / (R * T)
 					}
 
 					coefficients := []float64{1, 3*Cw - 1, 3*math.Pow(Cw, 2) - math.Pow(Bw, 2) - 2*Cw - Bw + Aw, math.Pow(Cw, 3) - math.Pow(Bw, 2)*Cw - math.Pow(Cw, 2) - Bw*Cw + Aw*Cw - Aw*Bw}
 					var cubroot = cubicEquationSolver(coefficients[0], coefficients[1], coefficients[2], coefficients[3])
 					Z_v = findMax(cubroot)
 
-					/* fmt.Printf("5 Roots: %.4f, %.4f, %.4f\n", cubroot[0], cubroot[1], cubroot[2])
-					   fmt.Printf("5 Z_v %.4f\n", Z_v)*/
-
-					//avvv = make([]float64, N)
 					for i := 0; i < N; i++ {
 						avv := 0.0
 						for j := 0; j < N; j++ {
@@ -501,7 +481,6 @@ func main() { // основная функция main, где написан о�
 						avvv[i] = avv
 					}
 
-					//fw_i := make([]float64, N)
 					for i := 0; i < N; i++ {
 						fw_i[i] = math.Exp(math.Log(y_i[i]*P) - math.Log(Z_v+Cw-Bw) + (Biw[i]-Ciw[i])/(Z_v+Cw-Bw) - (Aw/Bw)*((2*avvv[i]/aw)-(b_i[i]/bw))*math.Log((Z_v+Bw+Cw)/(Z_v+Cw)) - (Aw/Bw)*(Biw[i]+Ciw[i])/(Z_v+Bw+Cw) + (Aw/Bw)*Ciw[i]/(Z_v+Cw))
 					}
@@ -528,8 +507,6 @@ func main() { // основная функция main, где написан о�
 					}
 					Cl := cl * P / (R * T)
 
-					//	Bil := make([]float64, N)
-					//Cil := make([]float64, N)
 					for i := 0; i < N; i++ {
 						Bil[i] = b_i[i] * P / (R * T)
 						Cil[i] = c_i[i] * P / (R * T)
@@ -539,10 +516,6 @@ func main() { // основная функция main, где написан о�
 					cubroot = cubicEquationSolver(coefficients[0], coefficients[1], coefficients[2], coefficients[3])
 					Z_l = findMin(cubroot)
 
-					/*fmt.Printf("6 Roots: %.4f, %.4f, %.4f\n", cubroot[0], cubroot[1], cubroot[2])
-					  fmt.Printf("6 Z_l %.4f\n", Z_l)*/
-
-					//alll := make([]float64, N)
 					for i := 0; i < N; i++ {
 						all := 0.0
 						for j := 0; j < N; j++ {
@@ -551,14 +524,12 @@ func main() { // основная функция main, где написан о�
 						alll[i] = all
 					}
 
-					//fl_i := make([]float64, N)
 					for i := 0; i < N; i++ {
-						fl_i[i] = math.Exp(math.Log(x_i[i]*P) - math.Log(Z_l+Cl-Bl) + (Bil[i]-Cil[i])/(Z_l+Cl-Bl) - (Al/Bl)*((2*alll[i]/al)-(b_i[i]/bl))*math.Log((Z_l+Bl+Cl)/(Z_l+Cl)) - (Al/Bl)*(Bil[i]+Cil[i])/(Z_l+Bl+Cl) + (Al/Bl)*Cil[i]/(Z_l+Cl))
+						fl_i[i] = math.Exp(math.Log(x_i[i]*P) - math.Log(Z_l+Cl-Bl) + (Bil[i]-Cil[i])/(Z_l+Cl-Bl) - (Al/Bl)*((2*alll[i]/al)-(b_i[i]/bl))*math.Log((Z_l+Bl+Cl)/(Z_l+Cl)) - (Al/Bl)*(Bil[i]+Cil[i])/(Z_l+Bl+Cl) + (Al/Bl)*Cil[i]/(Z_l+Cl)) // уравнение летучести компонентов в жидкой фазе
 					}
 
-					// Корректировка распределения Ki 431 stroke
+					// Корректировка распределения Ki
 
-					//df_lv := make([]float64, N)
 					for i := 0; i < N; i++ {
 						if fl_i[i] != 0 {
 							K_i[i] *= fl_i[i] / fw_i[i]
@@ -602,16 +573,15 @@ func main() { // основная функция main, где написан о�
 			}
 
 			fmt.Fprintf(fid5, "%3.5f %3.5f %3.5f %3.5f %3.10f \t \n", T, P, Z_v, Z_l, W)
-			/*fmt.Printf("7 Z_v %.4f\n", Z_v)
-			  fmt.Printf("8 Z_l %.4f\n", Z_l)*/
 			fmt.Fprintf(fid6, "%4f \t \n", y_i)
 		}
 
 	}
-	duration := time.Since(start)
-	fmt.Println("SECONDS:", duration.Seconds())
+	duration := time.Since(start)               // время работы кода
+	fmt.Println("SECONDS:", duration.Seconds()) // вывод на консоль
 }
 
+// Деление каждого числа массива на 100
 func normalizeZ(arr []float64) []float64 {
 	for i := range arr {
 		arr[i] /= 100
@@ -619,6 +589,7 @@ func normalizeZ(arr []float64) []float64 {
 	return arr
 }
 
+// Деление каждого числа массива на 1000
 func normalizeCpen(arr []float64) []float64 {
 	for i := range arr {
 		arr[i] /= 1000
@@ -626,11 +597,7 @@ func normalizeCpen(arr []float64) []float64 {
 	return arr
 }
 
-func checkSum(arr []float64) bool {
-	sum := sum(arr)
-	return math.Abs(sum-1.0) < math.Pow(10, -12)
-}
-
+// Сумма элементов одномерного массива
 func sum(arr []float64) float64 {
 	sum := 0.0
 	for _, val := range arr {
@@ -639,6 +606,7 @@ func sum(arr []float64) float64 {
 	return sum
 }
 
+// Вычетание числа из каждого элемента массива
 func subtract(arr []float64, val float64) []float64 {
 	result := make([]float64, len(arr))
 	for i, v := range arr {
@@ -647,6 +615,7 @@ func subtract(arr []float64, val float64) []float64 {
 	return result
 }
 
+// Возведение в квадрат каждый элемент массива
 func square(arr []float64) []float64 {
 	result := make([]float64, len(arr))
 	for i, v := range arr {
@@ -655,6 +624,7 @@ func square(arr []float64) []float64 {
 	return result
 }
 
+// Ппроизведение элементов двух массивов
 func multiply(arr1, arr2 []float64) []float64 {
 	result := make([]float64, len(arr1))
 	for i := range arr1 {
@@ -663,6 +633,7 @@ func multiply(arr1, arr2 []float64) []float64 {
 	return result
 }
 
+// Максимальный по модулю элемент массива
 func maxAbs(arr []float64) float64 {
 	max := math.Abs(arr[0])
 	for _, val := range arr {
@@ -673,6 +644,7 @@ func maxAbs(arr []float64) float64 {
 	return max
 }
 
+// Решение уравнения Ричфорда-Райса
 func findRoot(z []float64, K []float64) float64 {
 
 	FvMin := 1 / (1 - max(K))
@@ -711,6 +683,7 @@ func findRoot(z []float64, K []float64) float64 {
 	return X
 }
 
+// Максимальное значение для уравнения Ричарда-Райса
 func max(values []float64) float64 {
 	maxValue := values[0]
 	for _, v := range values {
@@ -721,6 +694,7 @@ func max(values []float64) float64 {
 	return maxValue
 }
 
+// Минимальное значение для уравнения Ричарда-Райса
 func min(values []float64) float64 {
 	minValue := values[0]
 	for _, v := range values {
@@ -731,6 +705,7 @@ func min(values []float64) float64 {
 	return minValue
 }
 
+// Задать T P (начальное число и конечное число, шаг)
 func makeRange(min, max, step float64) []float64 {
 	size := int((max-min)/step) + 1
 	r := make([]float64, size)
@@ -740,6 +715,7 @@ func makeRange(min, max, step float64) []float64 {
 	return r
 }
 
+// Кубический корень из числа
 func cubeRoot(x float64) float64 {
 	if x >= 0 {
 		return math.Pow(x, 1./3.)
@@ -748,6 +724,7 @@ func cubeRoot(x float64) float64 {
 	}
 }
 
+// Решение кубического уравнение состояния
 func cubicEquationSolver(A, B, C, D float64) []float64 {
 	x := make([]float64, 3)
 	d := 18*A*B*C*D - 4*math.Pow(B, 3)*D + math.Pow(B, 2)*math.Pow(C, 2) - 4*A*math.Pow(C, 3) - 27*math.Pow(A, 2)*math.Pow(D, 2)
@@ -784,6 +761,7 @@ func cubicEquationSolver(A, B, C, D float64) []float64 {
 	return x
 }
 
+// Поиск максимального значения массива z
 func findMax(a []float64) (max float64) {
 	max = a[0]
 	for _, value := range a {
@@ -794,6 +772,7 @@ func findMax(a []float64) (max float64) {
 	return max
 }
 
+// Поиск минимального значения массива z
 func findMin(a []float64) (min float64) {
 	min = a[0]
 	for _, value := range a {
