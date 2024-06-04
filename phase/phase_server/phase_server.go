@@ -91,8 +91,11 @@ func (s *PhaseEqualibriumServer) Vle(ctx context.Context, req *pb.VleMessageRequ
 	P := req.Pres
 	T := req.Temp
 
-	var W, Z_l, Z_v float64
-	var Stable int
+	maxItStable := 30
+	maxItFlash := 400
+
+	var W, Z_l, Z_v, W_old float64
+	var Stable, TestPTF int
 
 	//var Control_phase float64
 
@@ -145,6 +148,11 @@ func (s *PhaseEqualibriumServer) Vle(ctx context.Context, req *pb.VleMessageRequ
 	fw_i := make([]float64, N)
 
 	df_lv := make([]float64, N)
+
+	Rr := make([]float64, N)
+	Rr_old := make([]float64, N)
+	Rr2 := make([]float64, N)
+	Rr2_old := make([]float64, N)
 
 	//fmt.Printf("ac_i: %3.5f\n", ac_i[i])
 
@@ -219,7 +227,7 @@ func (s *PhaseEqualibriumServer) Vle(ctx context.Context, req *pb.VleMessageRequ
 
 	// Часть 1 Проверка газовой фазы
 
-	for m < 30 {
+	for m < maxItStable {
 
 		Yi_v := make([]float64, N)
 		Sv1 := 0.0
@@ -290,7 +298,7 @@ func (s *PhaseEqualibriumServer) Vle(ctx context.Context, req *pb.VleMessageRequ
 		}
 
 		if Ri_v < math.Pow(10, -12) {
-			m = 30
+			m = maxItStable
 		}
 
 		K_i = multiply(K_i, Ri)
@@ -302,7 +310,7 @@ func (s *PhaseEqualibriumServer) Vle(ctx context.Context, req *pb.VleMessageRequ
 
 		if TS_v < math.Pow(10, -4) {
 			TS_v_flag = 1
-			m = 30
+			m = maxItStable
 		}
 
 		m++
@@ -365,7 +373,7 @@ func (s *PhaseEqualibriumServer) Vle(ctx context.Context, req *pb.VleMessageRequ
 	ml := 0
 	Ri_l := 1.0
 
-	for ml < 30 {
+	for ml < maxItStable {
 
 		Sl1 := 0.0
 		for i := 0; i < N; i++ {
@@ -430,7 +438,7 @@ func (s *PhaseEqualibriumServer) Vle(ctx context.Context, req *pb.VleMessageRequ
 		}
 
 		if Ri_l < math.Pow(10, -12) {
-			m = 30
+			m = maxItStable
 		}
 
 		K_i = multiply(K_i, Ri)
@@ -442,7 +450,7 @@ func (s *PhaseEqualibriumServer) Vle(ctx context.Context, req *pb.VleMessageRequ
 
 		if TS < math.Pow(10, -4) {
 			TS_l_flag = 1
-			m = 30
+			m = maxItStable
 		}
 		ml++
 	}
@@ -451,11 +459,13 @@ func (s *PhaseEqualibriumServer) Vle(ctx context.Context, req *pb.VleMessageRequ
 
 	if (TS_l_flag == 1 && TS_v_flag == 1) || (Sv <= 1 && TS_l_flag == 1) || (Sl <= 1 && TS_v_flag == 1) || (Sv < 1 && Sl <= 1) {
 		Stable = 1 //Stable
+		TestPTF = 1
 	} else {
 		Stable = 0 //Unstable
+		TestPTF = 0
 	}
 
-	if Stable == 0 {
+	if Stable == 0 || TestPTF == 1 {
 		for i := 0; i < N; i++ {
 			ac_i[i] = 0.42747 * math.Pow(R, 2) * math.Pow(Tkr[i], 2) / Pkr[i]
 			psi_i[i] = 0.48 + 1.574*w[i] - 0.176*math.Pow(w[i], 2)
@@ -477,7 +487,7 @@ func (s *PhaseEqualibriumServer) Vle(ctx context.Context, req *pb.VleMessageRequ
 		m := 0
 		eps_f := 1.0
 
-		for eps_f > 0.000001 && m < 200 {
+		for eps_f > 0.000001 && m < maxItFlash {
 
 			// Шаг 1 Нахождение общей доли пара
 
@@ -524,10 +534,6 @@ func (s *PhaseEqualibriumServer) Vle(ctx context.Context, req *pb.VleMessageRequ
 			var cubroot = cubicEquationSolver(coefficients[0], coefficients[1], coefficients[2], coefficients[3])
 			Z_v = findMax(cubroot)
 
-			/* fmt.Printf("5 Roots: %.4f, %.4f, %.4f\n", cubroot[0], cubroot[1], cubroot[2])
-			   fmt.Printf("5 Z_v %.4f\n", Z_v)*/
-
-			//avvv = make([]float64, N)
 			for i := 0; i < N; i++ {
 				avv := 0.0
 				for j := 0; j < N; j++ {
@@ -536,7 +542,6 @@ func (s *PhaseEqualibriumServer) Vle(ctx context.Context, req *pb.VleMessageRequ
 				avvv[i] = avv
 			}
 
-			//fw_i := make([]float64, N)
 			for i := 0; i < N; i++ {
 				fw_i[i] = math.Exp(math.Log(y_i[i]*P) - math.Log(Z_v+Cw-Bw) + (Biw[i]-Ciw[i])/(Z_v+Cw-Bw) - (Aw/Bw)*((2*avvv[i]/aw)-(b_i[i]/bw))*math.Log((Z_v+Bw+Cw)/(Z_v+Cw)) - (Aw/Bw)*(Biw[i]+Ciw[i])/(Z_v+Bw+Cw) + (Aw/Bw)*Ciw[i]/(Z_v+Cw))
 			}
@@ -585,15 +590,69 @@ func (s *PhaseEqualibriumServer) Vle(ctx context.Context, req *pb.VleMessageRequ
 			}
 
 			// Корректировка распределения Ki
-
 			for i := 0; i < N; i++ {
-				if fl_i[i] != 0 {
-					K_i[i] *= fl_i[i] / fw_i[i]
-					df_lv[i] = fl_i[i]/fw_i[i] - 1
+				df_lv[i] = 0.0
+				Rr[i] = fl_i[i] / fw_i[i]
+			}
+
+			if m <= N {
+				for i := 0; i < N; i++ {
+					if fl_i[i] != 0 {
+						K_i[i] *= fl_i[i] / fw_i[i]
+						df_lv[i] = fl_i[i]/fw_i[i] - 1
+					}
 				}
 			}
 
+			Crit1 := 0.0
+			Crit2 := 0.0
+			Crit3 := 0.0
+
+			for i := range Rr {
+				Rr2[i] = math.Pow((Rr[i] - 1), 2)
+				Rr2_old[i] = math.Pow((Rr_old[i] - 1), 2)
+			}
+
+			if m > 1 {
+				Crit3 = sum(Rr2)
+				Crit1 = Crit3 / sum(Rr2_old)
+				Crit2 = math.Abs(W - W_old)
+			}
+
+			if m > N && (Crit1 > 0.8) && Crit2 < 0.1 && Crit3 < 0.001 {
+				for i := 0; i < N; i++ {
+					if fl_i[i] != 0 {
+						K_i[i] *= math.Pow((fl_i[i] / fw_i[i]), 6)
+						df_lv[i] = fl_i[i]/fw_i[i] - 1
+					}
+				}
+			} else if m > N {
+				//fmt.Printf("FLAG1\n")
+				for i := 0; i < N; i++ {
+					if fl_i[i] != 0 {
+						K_i[i] *= math.Pow((fl_i[i] / fw_i[i]), 1)
+						df_lv[i] = fl_i[i]/fw_i[i] - 1
+					}
+				}
+			}
+			W_old = W
+			copy(Rr_old, Rr)
+
 			eps_f = maxAbs(df_lv)
+
+			if m > 5 && math.Abs(W) > 2 {
+				m = maxItFlash
+				Stable = 1
+			} else {
+				Stable = 0
+			}
+
+			if m > 80 && math.Abs(W-0.5) > 0.501 {
+				m = maxItFlash
+				Stable = 1
+			} else {
+				Stable = 0
+			}
 
 			if eps_f < 0.000001 {
 				break
@@ -604,24 +663,34 @@ func (s *PhaseEqualibriumServer) Vle(ctx context.Context, req *pb.VleMessageRequ
 
 	}
 
-	if Stable == 1 {
+	if Stable == 1 || math.Abs(W-0.5) > 0.5 {
 		Volume := 1000 * (Z_init * R * T / P)
-		if Volume*T*T > Control_phase_MF { //тогда газ
+		if Tpkr < 260 {
 			W = 1.0
-			Z_l = -9999
+			Z_l = 0.
 			Z_v = Z_init
 			copy(y_i, z)
 			for i := 0; i < N; i++ {
 				x_i[i] = 0.0
 			}
-		} else { //тогда жидкость
-			W = 0.0
-			//L:=1.0
-			Z_v = -9999
-			Z_l = Z_init
-			copy(x_i, z)
-			for i := 0; i < N; i++ {
-				y_i[i] = 0.0
+		} else {
+			if Volume*T*T > Control_phase_MF { //тогда газ
+				W = 1.0
+				Z_l = 0.
+				Z_v = Z_init
+				copy(y_i, z)
+				for i := 0; i < N; i++ {
+					x_i[i] = 0.0
+				}
+			} else { //тогда жидкость
+				W = 0.0
+				//L:=1.0
+				Z_v = 0.
+				Z_l = Z_init
+				copy(x_i, z)
+				for i := 0; i < N; i++ {
+					y_i[i] = 0.0
+				}
 			}
 		}
 
