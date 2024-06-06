@@ -1,52 +1,93 @@
 syntax="proto3";
 
 package phase_proto;
-import "google/protobuf/Empty.proto";
+
 option go_package = "/phase";
 
 service PhaseEqualibrium {
-   // rpc Init(InitMessageRequest) returns (initMessageResponse);
+    rpc Divide(DivideRequest) returns (Response);
+    rpc Multiply(MultiplyRequest) returns (Response);
+    rpc Array(ArrayRequest) returns (ArrayResponse);
+    rpc ArrayDivide(ArrayDivideRequest) returns (ArrayDivideResponse);
+    rpc init(initMessageRequest) returns (initMessageResponse);
     rpc vle(vleMessageRequest) returns (vleMessageResponse);
-    rpc Init(InitMessageRequest) returns (google.protobuf.Empty);
 }
 
+message DivideRequest{
+    double Num1 = 1;
+    double Num2 = 2;
+}
 
-message OneComponent{
-    string Component = 1;
-    double MoleFraction = 2;
-    double MolMass = 3;
-    double Tcr = 4;
-    double Pcr = 5;
-    double wFact = 6;
-    double Tb = 7;
-    double Vcr = 8;
-    double Pen = 9;
+message MultiplyRequest{
+    double Num1 = 1;
+    double Num2 = 2;
+}
+
+message ArrayRequest{
+    repeated double Nums = 1;
+}
+
+message ArrayResponse{
+    repeated double array = 1;
+}
+
+message ArrayDivideRequest{
+    repeated double Nums = 1;
+}
+
+message Response{
+    double Response = 1;
+}
+
+message ArrayDivideResponse{
+    repeated double array = 1;
+}
+
+message initMessageRequest{
+    message fluid{
+        string name = 1;
+        double molDolya = 2; 
+        double molecMass = 3;
+        double criticalPres = 4;
+        double criticalTemp = 5;
+        double volume = 6; // критический объем не используем
+        double aFactor = 7;
+        double shift = 8; // cpen в основном коде
     }
-
-message OneBIP{
-    repeated double Num = 1;
-}
-
-message InitMessageRequest{
-    repeated OneComponent FLUID = 1;
-    repeated OneBIP BIPs = 2;
+    message bip{
+        double bip = 1; // bip двумерный массив  {ci, cj} {0, 0}
+    }
+    repeated fluid fluids = 1; // массив флюидов 22 штук
+    repeated bip bips = 2;
 }
 
 message initMessageResponse{
-repeated OneBIP BIPs = 1;
-repeated OneComponent FLUID = 2;
+    message fluid{
+        string name = 1;
+        double molDolya = 2; 
+        double molecMass = 3;
+        double criticalPres = 4;
+        double criticalTemp = 5;
+        double volume = 6; // критический объем не используем
+        double aFactor = 7;
+        double shift = 8; // cpen в основном коде
+    }
+    message bip{
+        double bip = 1; // bip двумерный массив  {ci, cj} {0, 0}
+    }
+    repeated fluid fluids = 1; // массив флюидов 22 штук
+    repeated bip bips = 2; 
 }
 
 message vleMessageRequest {
     double temp = 1; // расчитывается 1 температура
-    double pres = 2; // расчитывается 1 давление
+    double pres = 5; // расчитывается 1 давление
 }
 
 message vleMessageResponse {
-    double L = 1; // 1-W = L
-    double Z_l = 2; // Zl
-    double Z_v = 3; // Zv
-    repeated double x_i = 4; // x_i
-    repeated double y_i = 5; // y_i
+    double dolyaLiquid = 1; // 1-W = L
+    double coefLiquid = 2; // Zl
+    double coefGas = 3; // Zv
+    repeated double dolyaCompLiquid = 4; // x_i
+    repeated double dolyaCompGas = 5; // y_i
 }
-
